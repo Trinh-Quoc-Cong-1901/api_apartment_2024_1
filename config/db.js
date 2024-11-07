@@ -1,9 +1,12 @@
+require('dotenv').config(); // Đảm bảo dòng này được thêm vào đầu file
+
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
     try {
-        const mongoURI = 'mongodb+srv://trinhquoccongldb:cong1901!@cluster0.pthi6.mongodb.net/';
-        await mongoose.connect(mongoURI,); // Loại bỏ các tùy chọn không cần thiết
+        // Sử dụng biến môi trường để lấy chuỗi kết nối
+        const mongoURI = process.env.MONGO_URI;
+        await mongoose.connect(mongoURI);
         console.log('Connected to MongoDB Atlas!');
     } catch (error) {
         console.error('Error connecting to MongoDB:', error);

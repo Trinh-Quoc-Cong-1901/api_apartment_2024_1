@@ -5,16 +5,24 @@ const feedbackController = require('../controllers/feedbackController');
 // Route để lấy tất cả feedbacks
 router.get('/', feedbackController.getFeedbacks);
 
-// Route để lấy chi tiết 1 feedback theo ID
+// // Route để lấy chi tiết 1 feedback theo ID
 router.get('/:id', feedbackController.getFeedbackById);
 
-// Route để tạo feedback mới
+// // Route để tạo feedback mới
 router.post('/', feedbackController.createFeedback);
 
-// Route để cập nhật feedback
+// // Route để cập nhật feedback
 router.put('/:id', feedbackController.updateFeedback);
 
-// Route để xóa feedback
+// // Route để xóa feedback
 router.delete('/:id', feedbackController.deleteFeedback);
+// search data
+// router.get('/search', feedbackController.searchData);
 
+
+// router.get('/', feedbackController.getFeedbacks);
+// router.get('/:id', feedbackController.getFeedbackById);
+// router.post('/', feedbackController.createFeedback);
+// router.put('/:id', feedbackController.updateFeedback);
+// router.delete(/:id/, feedbackController.deleteFeedback);
 module.exports = router;
