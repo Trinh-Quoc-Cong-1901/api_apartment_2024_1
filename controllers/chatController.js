@@ -1,11 +1,15 @@
-const Chat = require('../models/chatModel');
-const User = require('../models/userModel');  // Đảm bảo đúng đường dẫn đến User model
-const mongoose = require('mongoose');
-// Lưu tin nhắn mới
-exports.sendMessage = async (data) => {
-    const { sender, receiver, message } = data;
 
-    // Kiểm tra xem người gửi và người nhận có tồn tại không
+
+
+const Chat = require('../models/chatModel');
+const User = require('../models/userModel'); // Model của User
+const mongoose = require('mongoose');
+
+// Gửi tin nhắn
+exports.sendMessage = async (data) => {
+    const { sender, receiver, message, type } = data;
+
+    // Kiểm tra sự tồn tại của người gửi và người nhận
     const senderExists = await User.findById(sender);
     const receiverExists = await User.findById(receiver);
 
@@ -17,6 +21,7 @@ exports.sendMessage = async (data) => {
         sender,
         receiver,
         message,
+        type: type || 'text', // Mặc định là text nếu không cung cấp
     });
 
     try {
@@ -30,28 +35,48 @@ exports.sendMessage = async (data) => {
 
 // Lấy tin nhắn giữa hai người dùng
 exports.getMessages = async (req, res) => {
-    // Lấy userId và adminId từ req.params và loại bỏ các ký tự không mong muốn
-    const userId = req.params.userId.trim();  // Loại bỏ khoảng trắng và xuống dòng
-    const adminId = req.params.adminId.trim();  // Loại bỏ khoảng trắng và xuống dòng
+    const userId = req.params.userId.trim();
+    const adminId = req.params.adminId.trim();
 
-    // Kiểm tra xem userId và adminId có phải là ObjectId hợp lệ không
+    // Kiểm tra ObjectId hợp lệ
     if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(adminId)) {
         return res.status(400).json({ message: 'Invalid userId or adminId' });
     }
 
     try {
-        // Tìm các tin nhắn giữa userId và adminId
         const messages = await Chat.find({
             $or: [
                 { sender: userId, receiver: adminId },
-                { sender: adminId, receiver: userId }
-            ]
+                { sender: adminId, receiver: userId },
+            ],
         })
-            .populate('sender', 'name email')
-            .populate('receiver', 'name email')
-            .sort({ timestamp: 1 });
+            .populate('sender', 'name email') // Lấy thông tin người gửi
+            .populate('receiver', 'name email') // Lấy thông tin người nhận
+            .sort({ timestamp: 1 }); // Sắp xếp theo thời gian
 
         res.json(messages);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+// Xóa một tin nhắn theo ID
+exports.deleteMessage = async (req, res) => {
+    const { messageId } = req.params;
+
+    // Kiểm tra xem ID có hợp lệ không
+    if (!mongoose.Types.ObjectId.isValid(messageId)) {
+        return res.status(400).json({ message: 'Invalid messageId' });
+    }
+
+    try {
+        // Xóa tin nhắn
+        const deletedMessage = await Chat.findByIdAndDelete(messageId);
+
+        if (!deletedMessage) {
+            return res.status(404).json({ message: 'Message not found' });
+        }
+
+        res.status(200).json({ message: 'Message deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

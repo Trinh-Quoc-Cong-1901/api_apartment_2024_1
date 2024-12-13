@@ -17,4 +17,7 @@ router.post('/', async (req, res) => {
 // Route lấy tin nhắn giữa người dùng và admin
 router.get('/:userId/:adminId', chatController.getMessages);
 
+// Endpoint: DELETE /api/chats/:messageId
+router.delete('/:userId/:adminId/:messageId', chatController.deleteMessage);
+
 module.exports = router;

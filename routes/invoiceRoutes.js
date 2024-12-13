@@ -7,6 +7,9 @@ router.get('/', invoiceController.getInvoices);
 
 // Route để lấy chi tiết 1 hóa đơn theo ID
 router.get('/:id', invoiceController.getInvoiceById);
+// Lấy danh sách hóa đơn chưa thanh toán
+router.get('/invoices/unpaid', invoiceController.getUnpaidInvoices);
+
 
 // Route để tạo hóa đơn mới
 router.post('/', invoiceController.createInvoice);
