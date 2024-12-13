@@ -9,7 +9,8 @@ const memberRoutes = require('./routes/memberRoutes');
 const postRoutes = require('./routes/postRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const tokenRoutes = require('./routes/tokenRoutes');
-
+const storeRoutes = require('./routes/storeRoutes');
+const productRoutes = require('./routes/productRoutes');
 const app = express();
 
 
@@ -24,8 +25,10 @@ app.use('/api/feedbacks', feedbackRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/members', memberRoutes);
-app.use('/api/posts/users', postRoutes);
+app.use('/api/posts', postRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/token', tokenRoutes);
+app.use('/api/stores', storeRoutes);
+app.use('/api/products', productRoutes);
 
 module.exports = app;

@@ -1,21 +1,20 @@
-// routes/postRoutes.js
 const express = require('express');
 const router = express.Router();
-const postController = require('../controllers/postController');  // Đảm bảo import đúng
+const postController = require('../controllers/postController');
 
-// Tạo bài viết mới (chỉ dành cho admin)
-router.post('/:userId', postController.createPost);  // Phải chắc chắn rằng createPost tồn tại
+// Tạo bài viết mới
+router.post('/:userId', postController.createPost);
 
-// Lấy tất cả các bài viết
+// Lấy tất cả bài viết
 router.get('/allPost', postController.getAllPosts);
 
-// Lấy thông tin một bài viết
+// Lấy chi tiết bài viết
 router.get('/:postId', postController.getPostById);
 
-// Cập nhật bài viết
-router.put('/:postId', postController.updatePost);
+// Thêm bình luận vào bài viết
+router.post('/:postId/comment', postController.addComment);
 
-// Xóa bài viết
-router.delete('/:postId', postController.deletePost);
+// Thích hoặc bỏ thích bài viết
+router.post('/:postId/like', postController.likePost);
 
 module.exports = router;
