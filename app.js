@@ -11,6 +11,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const tokenRoutes = require('./routes/tokenRoutes');
 const storeRoutes = require('./routes/storeRoutes');
 const productRoutes = require('./routes/productRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const app = express();
 
 
@@ -30,5 +31,6 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/token', tokenRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
 
 module.exports = app;
