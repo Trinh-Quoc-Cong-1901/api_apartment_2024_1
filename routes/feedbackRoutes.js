@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const feedbackController = require('../controllers/feedbackController');
+const authenticate = require('../middleware/authenticate');
 
 // Route để lấy tất cả feedbacks
 router.get('/', feedbackController.getFeedbacks);
@@ -9,10 +10,10 @@ router.get('/', feedbackController.getFeedbacks);
 router.get('/:id', feedbackController.getFeedbackById);
 
 // // Route để tạo feedback mới
-router.post('/', feedbackController.createFeedback);
+router.post('/', authenticate, feedbackController.createFeedback);
 
 // // Route để cập nhật feedback
-router.put('/:id', feedbackController.updateFeedback);
+router.put('/:id', authenticate, feedbackController.updateFeedback);
 
 // // Route để xóa feedback
 router.delete('/:id', feedbackController.deleteFeedback);
