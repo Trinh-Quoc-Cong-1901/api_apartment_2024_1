@@ -1,12 +1,51 @@
 const Product = require('../models/productModel');
 const Store = require('../models/storeModel');
 
-// Thêm sản phẩm vào cửa hàng
-exports.addProductToStore = async (req, res) => {
-    const { storeId, name, price, stock, imageUrl, description, manufacturer, warranty } = req.body;
+// Lấy tất cả sản phẩm của một cửa hàng (admin và user)
+exports.getProductsByStore = async (req, res) => {
+    const { storeId } = req.params;
 
     try {
-        // Tạo sản phẩm mới
+        const products = await Product.find({ store: storeId });
+        if (!products.length) {
+            return res.status(404).json({ message: 'Không có sản phẩm nào trong cửa hàng này' });
+        }
+        res.status(200).json(products);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Lấy chi tiết một sản phẩm (admin và user)
+exports.getProductById = async (req, res) => {
+    const { storeId, productId } = req.params;
+
+    try {
+        const product = await Product.findOne({ _id: productId, store: storeId });
+        if (!product) {
+            return res.status(404).json({ message: 'Sản phẩm không tồn tại trong cửa hàng này' });
+        }
+        res.status(200).json(product);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Tạo sản phẩm mới (chỉ admin)
+exports.createProduct = async (req, res) => {
+    const { storeId } = req.params;
+    const { name, price, stock, imageUrl, description, manufacturer, warranty, expiryDate } = req.body;
+
+    try {
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Bạn không có quyền tạo sản phẩm' });
+        }
+
+        const storeExists = await Store.findById(storeId);
+        if (!storeExists) {
+            return res.status(404).json({ message: 'Cửa hàng không tồn tại' });
+        }
+
         const newProduct = new Product({
             name,
             price,
@@ -14,111 +53,64 @@ exports.addProductToStore = async (req, res) => {
             imageUrl,
             description,
             manufacturer,
-            warranty
+            warranty,
+            expiryDate,
+            store: storeId,
         });
+
         const savedProduct = await newProduct.save();
-
-        // Gắn sản phẩm vào cửa hàng
-        const store = await Store.findById(storeId);
-        if (!store) {
-            return res.status(404).json({ message: 'Store not found' });
-        }
-
-        store.products.push(savedProduct._id);
-        await store.save();
-
-        res.status(201).json({
-            product: savedProduct,
-            store: { _id: store._id, name: store.name, address: store.address }
-        });
+        res.status(201).json(savedProduct);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// Lấy thông tin chi tiết của một sản phẩm
-exports.getProductDetails = async (req, res) => {
-    const { productId } = req.params;
-
-    try {
-        const product = await Product.findById(productId);
-        if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
-        }
-
-        // Tìm cửa hàng chứa sản phẩm
-        const store = await Store.findOne({ products: productId });
-
-        res.status(200).json({
-            product,
-            store: store ? { _id: store._id, name: store.name, address: store.address } : null
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Cập nhật thông tin sản phẩm
+// Cập nhật sản phẩm (chỉ admin)
 exports.updateProduct = async (req, res) => {
-    const { productId } = req.params;
-    const { name, price, stock, imageUrl, description, manufacturer, warranty } = req.body;
+    const { storeId, productId } = req.params;
+    const { name, price, stock, imageUrl, description, manufacturer, warranty, expiryDate } = req.body;
 
     try {
-        const updatedProduct = await Product.findByIdAndUpdate(
-            productId,
-            { name, price, stock, imageUrl, description, manufacturer, warranty },
-            { new: true }
-        );
-
-        if (!updatedProduct) {
-            return res.status(404).json({ message: 'Product not found' });
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Bạn không có quyền cập nhật sản phẩm' });
         }
 
+        const product = await Product.findOne({ _id: productId, store: storeId });
+        if (!product) {
+            return res.status(404).json({ message: 'Sản phẩm không tồn tại trong cửa hàng này' });
+        }
+
+        product.name = name || product.name;
+        product.price = price || product.price;
+        product.stock = stock || product.stock;
+        product.imageUrl = imageUrl || product.imageUrl;
+        product.description = description || product.description;
+        product.manufacturer = manufacturer || product.manufacturer;
+        product.warranty = warranty || product.warranty;
+        product.expiryDate = expiryDate || product.expiryDate;
+
+        const updatedProduct = await product.save();
         res.status(200).json(updatedProduct);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// Xóa sản phẩm
+// Xóa sản phẩm (chỉ admin)
 exports.deleteProduct = async (req, res) => {
-    const { productId } = req.params;
-    const { storeId } = req.body; // ID của cửa hàng chứa sản phẩm này
+    const { storeId, productId } = req.params;
 
     try {
-        // Tìm và xóa sản phẩm dựa vào ID
-        const product = await Product.findById(productId);
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Bạn không có quyền xóa sản phẩm' });
+        }
+
+        const product = await Product.findOneAndDelete({ _id: productId, store: storeId });
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json({ message: 'Sản phẩm không tồn tại trong cửa hàng này' });
         }
 
-        // Xóa sản phẩm khỏi cửa hàng
-        const store = await Store.findById(storeId);
-        if (store) {
-            store.products.pull(productId);
-            await store.save();
-        }
-
-        // Xóa sản phẩm
-        await Product.findByIdAndDelete(productId);
-
-        res.status(200).json({ message: 'Product deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Lấy tất cả sản phẩm của một cửa hàng
-exports.getProductsByStore = async (req, res) => {
-    const { storeId } = req.params;
-
-    try {
-        const store = await Store.findById(storeId).populate('products');
-        if (!store) {
-            return res.status(404).json({ message: 'Store not found' });
-        }
-
-        res.status(200).json(store.products);
+        res.status(200).json({ message: 'Sản phẩm đã được xóa thành công' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -1,21 +1,18 @@
-
 const mongoose = require('mongoose');
 
 const invoiceSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    time: { type: String, required: true },
-    totalAmount: { type: String }, // Tự động tính toán, không cần nhập tay
-    status: { type: String, required: true },
-    paymentDueDate: { type: String, required: true },
-    paymentPeriod: { type: String, required: true },
-    isPaid: { type: Boolean, required: true },
+    title: { type: String, required: true }, // Tiêu đề hóa đơn
+    totalAmount: { type: String }, // Tự động tính toán từ dịch vụ
+    status: { type: String, required: true }, // Trạng thái hóa đơn
+    paymentDueDate: { type: String, required: true }, // Hạn đóng tiền
     serviceFees: [
         {
-            name: { type: String, required: true },
-            details: { type: String, required: true },
-            amount: { type: String, required: true } // Giá trị là số
+            name: { type: String, required: true }, // Tên dịch vụ
+            details: { type: String, required: true }, // Chi tiết dịch vụ
+            amount: { type: String, required: true } // Giá trị tiền (số)
         }
     ],
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true } // Liên kết tới User
 }, { timestamps: true });
 
 // Middleware để tính toán totalAmount trước khi lưu

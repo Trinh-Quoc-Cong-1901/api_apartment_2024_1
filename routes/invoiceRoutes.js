@@ -1,23 +1,29 @@
 const express = require('express');
 const router = express.Router();
-const invoiceController = require('../controllers/invoiceController');  // Import đúng controller
+const invoiceController = require('../controllers/invoiceController'); // Import đúng controller
+const authenticate = require('../middleware/authenticate'); // Middleware để xác thực
 
-// Route để lấy tất cả hóa đơn
-router.get('/', invoiceController.getInvoices);
+// Admin routes
+// Lấy tất cả hóa đơn (chỉ admin)
+router.get('/admin', authenticate, invoiceController.getAllInvoices);
 
-// Route để lấy chi tiết 1 hóa đơn theo ID
-router.get('/:id', invoiceController.getInvoiceById);
-// Lấy danh sách hóa đơn chưa thanh toán
-router.get('/invoices/unpaid', invoiceController.getUnpaidInvoices);
+// Lấy chi tiết 1 hóa đơn theo ID (chỉ admin)
+router.get('/admin/:id', authenticate, invoiceController.getInvoiceById);
 
+// Tạo hóa đơn mới (chỉ admin)
+router.post('/admin', authenticate, invoiceController.createInvoice);
 
-// Route để tạo hóa đơn mới
-router.post('/', invoiceController.createInvoice);
+// Cập nhật hóa đơn (chỉ admin)
+router.put('/admin/:id', authenticate, invoiceController.updateInvoice);
 
-// Route để cập nhật hóa đơn
-router.put('/:id', invoiceController.updateInvoice);
+// Xóa hóa đơn (chỉ admin)
+router.delete('/admin/:id', authenticate, invoiceController.deleteInvoice);
 
-// Route để xóa hóa đơn
-router.delete('/:id', invoiceController.deleteInvoice);
+// User routes
+// Lấy danh sách hóa đơn của người dùng hiện tại (user)
+router.get('/user', authenticate, invoiceController.getUserInvoices);
+
+// Lấy chi tiết một hóa đơn của người dùng hiện tại (user)
+router.get('/user/:id', authenticate, invoiceController.getUserInvoiceById);
 
 module.exports = router;

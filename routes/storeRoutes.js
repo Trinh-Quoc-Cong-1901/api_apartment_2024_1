@@ -1,20 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const storeController = require('../controllers/storeController');
+const authenticate = require('../middleware/authenticate');
 
-// Tạo cửa hàng mới
-router.post('/', storeController.createStore);
+// Xem tất cả cửa hàng
+router.get('/', authenticate, storeController.getStores);
 
-// Lấy tất cả cửa hàng
-router.get('/', storeController.getAllStores);
+// Xem chi tiết một cửa hàng
+router.get('/:id', authenticate, storeController.getStoreById);
 
-// Lấy thông tin chi tiết một cửa hàng
-router.get('/:id', storeController.getStoreById);
-
-// Cập nhật thông tin cửa hàng
-router.put('/:id', storeController.updateStore);  // Route cho cập nhật
-
-// Xóa cửa hàng
-router.delete('/:id', storeController.deleteStore);  // Route cho xóa
+// Quản lý cửa hàng (chỉ admin)
+router.post('/', authenticate, storeController.createStore);
+router.put('/:id', authenticate, storeController.updateStore);
+router.delete('/:id', authenticate, storeController.deleteStore);
 
 module.exports = router;

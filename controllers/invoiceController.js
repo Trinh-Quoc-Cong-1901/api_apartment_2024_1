@@ -1,141 +1,89 @@
-// const Invoice = require('../models/invoiceModel');
-
-// // Lấy tất cả hóa đơn
-// exports.getInvoices = async (req, res) => {
-//     try {
-//         const invoices = await Invoice.find();
-//         res.status(200).json(invoices);
-//     } catch (error) {
-//         res.status(500).json({ message: error.message });
-//     }
-// };
-
-// // Lấy chi tiết 1 hóa đơn theo ID
-// exports.getInvoiceById = async (req, res) => {
-//     const { id } = req.params;
-//     try {
-//         const invoice = await Invoice.findById(id);
-//         if (!invoice) {
-//             return res.status(404).json({ message: "Hóa đơn không tồn tại" });
-//         }
-//         res.status(200).json(invoice);
-//     } catch (error) {
-//         res.status(500).json({ message: error.message });
-//     }
-// };
-
-// // Tạo hóa đơn mới
-// exports.createInvoice = async (req, res) => {
-//     const { title, time, totalAmount, status, paymentDueDate, paymentPeriod, isPaid, serviceFees } = req.body;
-//     const newInvoice = new Invoice({ title, time, totalAmount, status, paymentDueDate, paymentPeriod, isPaid, serviceFees });
-
-//     try {
-//         const savedInvoice = await newInvoice.save();
-//         res.status(201).json(savedInvoice);
-//     } catch (error) {
-//         res.status(400).json({ message: error.message });
-//     }
-// };
-
-// // Cập nhật hóa đơn
-// exports.updateInvoice = async (req, res) => {
-//     const { id } = req.params;
-//     const { title, time, totalAmount, status, paymentDueDate, paymentPeriod, isPaid, serviceFees } = req.body;
-//     try {
-//         const updatedInvoice = await Invoice.findByIdAndUpdate(
-//             id,
-//             { title, time, totalAmount, status, paymentDueDate, paymentPeriod, isPaid, serviceFees },
-//             { new: true, runValidators: true }
-//         );
-//         if (!updatedInvoice) {
-//             return res.status(404).json({ message: "Hóa đơn không tồn tại" });
-//         }
-//         res.status(200).json(updatedInvoice);
-//     } catch (error) {
-//         res.status(400).json({ message: error.message });
-//     }
-// };
-
-// // Xóa hóa đơn
-// exports.deleteInvoice = async (req, res) => {
-//     const { id } = req.params;
-//     try {
-//         const deletedInvoice = await Invoice.findByIdAndDelete(id);
-//         if (!deletedInvoice) {
-//             return res.status(404).json({ message: "Hóa đơn không tồn tại" });
-//         }
-//         res.status(200).json({ message: "Hóa đơn đã được xóa thành công" });
-//     } catch (error) {
-//         res.status(500).json({ message: error.message });
-//     }
-// };
 const Invoice = require('../models/invoiceModel');
+const User = require('../models/userModel');
+const mongoose = require('mongoose');
 
-// Lấy tất cả hóa đơn
-exports.getInvoices = async (req, res) => {
+// Lấy tất cả hóa đơn (chỉ admin)
+exports.getAllInvoices = async (req, res) => {
     try {
-        const invoices = await Invoice.find();
+        // Kiểm tra quyền admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Bạn không có quyền thực hiện thao tác này' });
+        }
+
+        const invoices = await Invoice.find().populate('user', 'name email');
         res.status(200).json(invoices);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// Lấy chi tiết 1 hóa đơn theo ID
+// Lấy chi tiết một hóa đơn (admin có thể lấy bất kỳ, user chỉ được lấy hóa đơn của mình)
 exports.getInvoiceById = async (req, res) => {
     const { id } = req.params;
     try {
-        const invoice = await Invoice.findById(id);
+        const invoice = await Invoice.findById(id).populate('user', 'name email');
         if (!invoice) {
-            return res.status(404).json({ message: "Hóa đơn không tồn tại" });
+            return res.status(404).json({ message: 'Hóa đơn không tồn tại' });
         }
+
+        // Kiểm tra quyền
+        if (req.user.role !== 'admin' && invoice.user.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Bạn không có quyền xem hóa đơn này' });
+        }
+
         res.status(200).json(invoice);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// Tạo hóa đơn mới
-exports.createInvoice = async (req, res) => {
-    const { title, time, status, paymentDueDate, paymentPeriod, isPaid, serviceFees } = req.body;
-
-    // Tạo hóa đơn mới mà không cần `totalAmount`
-    const newInvoice = new Invoice({ title, time, status, paymentDueDate, paymentPeriod, isPaid, serviceFees });
+// Xóa hóa đơn (chỉ admin)
+exports.deleteInvoice = async (req, res) => {
+    const { id } = req.params;
 
     try {
-        const savedInvoice = await newInvoice.save(); // `totalAmount` sẽ tự động tính
-        res.status(201).json(savedInvoice);
+        // Kiểm tra quyền admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Bạn không có quyền thực hiện thao tác này' });
+        }
+
+        const deletedInvoice = await Invoice.findByIdAndDelete(id);
+        if (!deletedInvoice) {
+            return res.status(404).json({ message: 'Hóa đơn không tồn tại' });
+        }
+
+        res.status(200).json({ message: 'Hóa đơn đã được xóa thành công' });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(500).json({ message: error.message });
     }
 };
 
-// Cập nhật hóa đơn
+// Cập nhật hóa đơn (chỉ admin)
 exports.updateInvoice = async (req, res) => {
     const { id } = req.params;
-    const { title, time, status, paymentDueDate, paymentPeriod, isPaid, serviceFees } = req.body;
+    const { title, status, paymentDueDate, serviceFees } = req.body;
 
     try {
-        // Tìm hóa đơn và cập nhật các trường cần thiết
+        // Kiểm tra quyền admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Bạn không có quyền thực hiện thao tác này' });
+        }
+
         const invoice = await Invoice.findById(id);
         if (!invoice) {
-            return res.status(404).json({ message: "Hóa đơn không tồn tại" });
+            return res.status(404).json({ message: 'Hóa đơn không tồn tại' });
         }
 
         // Cập nhật các trường
         invoice.title = title || invoice.title;
-        invoice.time = time || invoice.time;
         invoice.status = status || invoice.status;
         invoice.paymentDueDate = paymentDueDate || invoice.paymentDueDate;
-        invoice.paymentPeriod = paymentPeriod || invoice.paymentPeriod;
-        invoice.isPaid = isPaid !== undefined ? isPaid : invoice.isPaid;
 
-        // Chỉ cập nhật serviceFees nếu có
+        // Cập nhật serviceFees nếu có
         if (serviceFees) {
             invoice.serviceFees = serviceFees;
         }
 
-        // Lưu hóa đơn, `totalAmount` sẽ được tự động tính
         const updatedInvoice = await invoice.save();
         res.status(200).json(updatedInvoice);
     } catch (error) {
@@ -143,24 +91,59 @@ exports.updateInvoice = async (req, res) => {
     }
 };
 
-// Xóa hóa đơn
-exports.deleteInvoice = async (req, res) => {
-    const { id } = req.params;
+// Tạo hóa đơn mới (chỉ admin)
+exports.createInvoice = async (req, res) => {
+    const { title, status, paymentDueDate, serviceFees, user } = req.body;
+
     try {
-        const deletedInvoice = await Invoice.findByIdAndDelete(id);
-        if (!deletedInvoice) {
-            return res.status(404).json({ message: "Hóa đơn không tồn tại" });
+        // Kiểm tra quyền admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Bạn không có quyền thực hiện thao tác này' });
         }
-        res.status(200).json({ message: "Hóa đơn đã được xóa thành công" });
+
+        // Kiểm tra xem user có tồn tại không
+        const userExists = await User.findById(user);
+        if (!userExists) {
+            return res.status(404).json({ message: 'Người dùng không tồn tại' });
+        }
+
+        // Tạo hóa đơn mới
+        const newInvoice = new Invoice({
+            title,
+            status,
+            paymentDueDate,
+            serviceFees,
+            user, // Gắn ID của người dùng
+        });
+
+        const savedInvoice = await newInvoice.save(); // `totalAmount` sẽ tự động tính
+        res.status(201).json(savedInvoice);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
-// Lấy danh sách hóa đơn chưa thanh toán
-exports.getUnpaidInvoices = async (req, res) => {
+
+// Lấy tất cả hóa đơn của người dùng hiện tại (user)
+exports.getUserInvoices = async (req, res) => {
     try {
-        const unpaidInvoices = await Invoice.find({ status: "Chưa thanh toán" });
-        res.status(200).json(unpaidInvoices);
+        const invoices = await Invoice.find({ user: req.user.id }).populate('user', 'name email');
+        res.status(200).json(invoices);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Lấy chi tiết một hóa đơn của người dùng hiện tại (user)
+exports.getUserInvoiceById = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const invoice = await Invoice.findOne({ _id: id, user: req.user.id }).populate('user', 'name email');
+        if (!invoice) {
+            return res.status(404).json({ message: 'Hóa đơn không tồn tại hoặc không thuộc về bạn' });
+        }
+
+        res.status(200).json(invoice);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
