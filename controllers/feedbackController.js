@@ -1,7 +1,7 @@
 const Feedback = require('../models/feedbackModel');
 const User = require('../models/userModel');
 const mongoose = require('mongoose');
-
+const Notification = require('../models/notificationModel');
 // Lấy tất cả feedbacks kèm thông tin người tạo
 exports.getFeedbacks = async (req, res) => {
     try {
@@ -90,6 +90,16 @@ exports.updateFeedback = async (req, res) => {
         // Chỉ admin mới được phép cập nhật trạng thái
         if (req.user.role === 'admin') {
             feedback.status = status ?? feedback.status;
+
+            // Tạo thông báo nếu trạng thái thay đổi
+            const notification = new Notification({
+                user: feedback.createdBy, // Người nhận thông báo là người tạo feedback
+                title: ` ${feedback.title} - Trạng thái mới: ${status}`, // Tiêu đề thông báo
+                type: 'feedback',
+                relatedId: feedback._id, // ID của feedback
+            });
+
+            await notification.save();
         }
 
         const updatedFeedback = await feedback.save();

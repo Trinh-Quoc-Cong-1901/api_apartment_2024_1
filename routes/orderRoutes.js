@@ -1,21 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
+const authenticate = require('../middleware/authenticate');
 
-// Route: Lấy tất cả đơn hàng
-// Method: GET /api/orders
-router.get('/', orderController.getOrders);
+// Admin: Xem tất cả đơn hàng
+router.get('/admin', authenticate, orderController.getAllOrders);
 
-// Route: Thêm mới đơn hàng
-// Method: POST /api/orders
-router.post('/', orderController.createOrder);
+// Admin: Xem chi tiết một đơn hàng
+router.get('/admin/:id', authenticate, orderController.getOrderDetails);
 
-// Route: Lấy chi tiết đơn hàng theo ID
-// Method: GET /api/orders/:id
-router.get('/:id', orderController.getOrderById);
+// Admin: Cập nhật trạng thái đơn hàng
+router.put('/admin/:id', authenticate, orderController.updateOrderStatus);
 
-// Route: Xóa đơn hàng theo ID
-// Method: DELETE /api/orders/:id
-router.delete('/:id', orderController.deleteOrder);
+// Admin: Xóa đơn hàng
+router.delete('/admin/:id', authenticate, orderController.deleteOrder);
+
+// User: Xem tất cả đơn hàng của mình
+router.get('/', authenticate, orderController.getUserOrders);
+
+// User: Xem chi tiết một đơn hàng của mình
+router.get('/:id', authenticate, orderController.getUserOrderDetails);
+
+// User: Tạo đơn hàng
+router.post('/', authenticate, orderController.createOrder);
 
 module.exports = router;

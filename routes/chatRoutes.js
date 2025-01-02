@@ -1,23 +1,21 @@
-// routes/chatRoutes.js
 const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chatController');
+const authenticate = require('../middleware/authenticate');
 
+// Thêm tin nhắn
+router.post('/', authenticate, chatController.addMessage);
 
-// Route gửi tin nhắn mới
-router.post('/', async (req, res) => {
-    try {
-        const savedMessage = await chatController.sendMessage(req.body);
-        res.status(201).json(savedMessage);
-    } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
-});
+// Sửa tin nhắn
+router.put('/:id', authenticate, chatController.updateMessage);
 
-// Route lấy tin nhắn giữa người dùng và admin
-router.get('/:userId/:adminId', chatController.getMessages);
+// Xóa tin nhắn
+router.delete('/:id', authenticate, chatController.deleteMessage);
 
-// Endpoint: DELETE /api/chats/:messageId
-router.delete('/:userId/:adminId/:messageId', chatController.deleteMessage);
+// Lấy tất cả tin nhắn của một user
+router.get('/user', authenticate, chatController.getMessagesByUser);
+
+// Admin: Lấy tất cả tin nhắn với từng user
+router.get('/admin/messages-by-user', authenticate, chatController.getAllMessagesByUsers);
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const Invoice = require('../models/invoiceModel');
 const User = require('../models/userModel');
 const mongoose = require('mongoose');
+const Notification = require('../models/notificationModel');
 
 // Lấy tất cả hóa đơn (chỉ admin)
 exports.getAllInvoices = async (req, res) => {
@@ -91,6 +92,7 @@ exports.updateInvoice = async (req, res) => {
     }
 };
 
+
 // Tạo hóa đơn mới (chỉ admin)
 exports.createInvoice = async (req, res) => {
     const { title, status, paymentDueDate, serviceFees, user } = req.body;
@@ -117,6 +119,17 @@ exports.createInvoice = async (req, res) => {
         });
 
         const savedInvoice = await newInvoice.save(); // `totalAmount` sẽ tự động tính
+
+        // Tạo thông báo
+        const notification = new Notification({
+            user, // Người nhận thông báo (user được liên kết với hóa đơn)
+            title: ` ${title}`,
+            type: 'invoice',
+            relatedId: savedInvoice._id, // ID của hóa đơn
+        });
+
+        await notification.save();
+
         res.status(201).json(savedInvoice);
     } catch (error) {
         res.status(500).json({ message: error.message });
