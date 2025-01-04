@@ -92,6 +92,32 @@ exports.updateInvoice = async (req, res) => {
     }
 };
 
+// Cập nhật trạng thái hóa đơn (user thanh toán)
+exports.markInvoiceAsPaid = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Tìm hóa đơn
+        const invoice = await Invoice.findById(id);
+        if (!invoice) {
+            return res.status(404).json({ message: 'Hóa đơn không tồn tại' });
+        }
+
+        // Kiểm tra xem người dùng có quyền truy cập hóa đơn này không
+        if (invoice.user.toString() !== req.user.id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Bạn không có quyền truy cập hóa đơn này' });
+        }
+
+        // Cập nhật trạng thái hóa đơn thành 'paid'
+        invoice.status = 'Đã thanh toán';
+        const updatedInvoice = await invoice.save();
+
+        res.status(200).json({ message: 'Hóa đơn đã được thanh toán thành công', invoice: updatedInvoice });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
 
 // Tạo hóa đơn mới (chỉ admin)
 exports.createInvoice = async (req, res) => {

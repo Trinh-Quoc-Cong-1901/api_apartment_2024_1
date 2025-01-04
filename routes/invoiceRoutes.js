@@ -25,5 +25,7 @@ router.get('/user', authenticate, invoiceController.getUserInvoices);
 
 // Lấy chi tiết một hóa đơn của người dùng hiện tại (user)
 router.get('/user/:id', authenticate, invoiceController.getUserInvoiceById);
+// 
+router.patch('/user/:id', authenticate, invoiceController.markInvoiceAsPaid);
 
 module.exports = router;
