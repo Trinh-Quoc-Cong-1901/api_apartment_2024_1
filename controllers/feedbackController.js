@@ -110,6 +110,7 @@ exports.updateFeedback = async (req, res) => {
 };
 
 // Xóa feedback
+// Xóa feedback
 exports.deleteFeedback = async (req, res) => {
     const { id } = req.params;
 
@@ -119,14 +120,12 @@ exports.deleteFeedback = async (req, res) => {
             return res.status(404).json({ message: 'Feedback không tồn tại' });
         }
 
-        // Kiểm tra quyền
-        if (feedback.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Bạn không có quyền xóa feedback này' });
-        }
-
+        // Xóa trực tiếp mà không cần kiểm tra quyền
         await Feedback.findByIdAndDelete(id);
         res.status(200).json({ message: 'Feedback đã được xóa thành công' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error(error); // Log lỗi chi tiết
+        res.status(500).json({ message: 'Đã xảy ra lỗi trên server' });
     }
 };
+
