@@ -8,6 +8,7 @@ const feedbackSchema = new mongoose.Schema({
     images: [{ type: String }], // Mảng URL hình ảnh
 
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Người tạo feedback
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'TechnicalStaff' }, // Nhân viên được phân công
     status: { type: String, enum: ['Pending', 'In Progress', 'Resolved'], default: 'Pending' } // Trạng thái feedback
 }, { timestamps: true });
 

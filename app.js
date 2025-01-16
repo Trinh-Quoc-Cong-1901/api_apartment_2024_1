@@ -12,6 +12,8 @@ const tokenRoutes = require('./routes/tokenRoutes');
 const storeRoutes = require('./routes/storeRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const technicalStaffRoutes = require('./routes/technicalStaffRoutes');
+
 const app = express();
 
 
@@ -32,5 +34,6 @@ app.use('/api/token', tokenRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/technical-staff', technicalStaffRoutes);
 
 module.exports = app;

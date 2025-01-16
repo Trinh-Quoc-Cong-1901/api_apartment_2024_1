@@ -1,25 +1,29 @@
 const Feedback = require('../models/feedbackModel');
 const User = require('../models/userModel');
+const TechnicalStaff = require('../models/technicalStaffModel');
 const mongoose = require('mongoose');
 const Notification = require('../models/notificationModel');
-// Lấy tất cả feedbacks kèm thông tin người tạo
+
+// Lấy tất cả feedbacks kèm thông tin người tạo và nhân viên được phân công
 exports.getFeedbacks = async (req, res) => {
     try {
         const feedbacks = await Feedback.find()
-            .populate('createdBy', 'name email address phoneNumber age');
+            .populate('createdBy', 'name email address phoneNumber age')
+            .populate('assignedTo', 'name phoneNumber skills');
         res.status(200).json(feedbacks);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// Lấy chi tiết feedback theo ID kèm thông tin người tạo
+// Lấy chi tiết feedback theo ID kèm thông tin người tạo và nhân viên được phân công
 exports.getFeedbackById = async (req, res) => {
     const { id } = req.params;
 
     try {
         const feedback = await Feedback.findById(id)
-            .populate('createdBy', 'name email address phoneNumber age');
+            .populate('createdBy', 'name email address phoneNumber age')
+            .populate('assignedTo', 'name phoneNumber skills');
         if (!feedback) {
             return res.status(404).json({ message: 'Feedback không tồn tại' });
         }
@@ -43,7 +47,7 @@ exports.createFeedback = async (req, res) => {
         // Kiểm tra xem userId có tồn tại không
         const userExists = await User.findById(userId);
         if (!userExists) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: 'User không tồn tại' });
         }
 
         // Tạo feedback mới
@@ -67,7 +71,7 @@ exports.createFeedback = async (req, res) => {
 // Cập nhật feedback
 exports.updateFeedback = async (req, res) => {
     const { id } = req.params;
-    const { title, feedbackType, priority, content, images, status } = req.body;
+    const { title, feedbackType, priority, content, images, status, assignedTo } = req.body;
 
     try {
         const feedback = await Feedback.findById(id);
@@ -76,40 +80,61 @@ exports.updateFeedback = async (req, res) => {
         }
 
         // Kiểm tra quyền
-        if (feedback.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
+        const isAdmin = req.user.role === 'admin';
+        const isCreator = feedback.createdBy.toString() === req.user.id;
+
+        if (!isAdmin && !isCreator) {
             return res.status(403).json({ message: 'Bạn không có quyền cập nhật feedback này' });
         }
 
-        // Cập nhật feedback
+        // Cập nhật các trường chung
         feedback.title = title ?? feedback.title;
         feedback.feedbackType = feedbackType ?? feedback.feedbackType;
         feedback.priority = priority ?? feedback.priority;
         feedback.content = content ?? feedback.content;
         feedback.images = images ?? feedback.images;
 
-        // Chỉ admin mới được phép cập nhật trạng thái
-        if (req.user.role === 'admin') {
-            feedback.status = status ?? feedback.status;
+        // Xử lý quyền cập nhật của admin
+        if (isAdmin) {
+            if (status === 'In Progress' && feedback.status === 'Pending') {
+                feedback.status = 'In Progress';
+            }
 
-            // Tạo thông báo nếu trạng thái thay đổi
-            const notification = new Notification({
-                user: feedback.createdBy, // Người nhận thông báo là người tạo feedback
-                title: ` ${feedback.title} - Trạng thái mới: ${status}`, // Tiêu đề thông báo
-                type: 'feedback',
-                relatedId: feedback._id, // ID của feedback
-            });
+            if (assignedTo) {
+                // Kiểm tra xem nhân viên được phân công có hợp lệ không
+                const employee = await TechnicalStaff.findById(assignedTo);
+                if (!employee) {
+                    return res.status(404).json({ message: 'Nhân viên không tồn tại' });
+                }
 
-            await notification.save();
+                feedback.assignedTo = assignedTo;
+            }
+        }
+
+        // Xử lý quyền cập nhật của người tạo
+        if (isCreator) {
+            if (status === 'Resolved' && feedback.status === 'In Progress') {
+                feedback.status = 'Resolved';
+
+                // Tạo thông báo cho admin rằng feedback đã được resolved
+                const notification = new Notification({
+                    user: req.user.id, // Người nhận là admin
+                    title: `Feedback đã được giải quyết: ${feedback.title}`,
+                    type: 'feedback',
+                    relatedId: feedback._id,
+                });
+
+                await notification.save();
+            }
         }
 
         const updatedFeedback = await feedback.save();
         res.status(200).json(updatedFeedback);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(500).json({ message: error.message });
     }
 };
 
-// Xóa feedback
 // Xóa feedback
 exports.deleteFeedback = async (req, res) => {
     const { id } = req.params;
@@ -120,12 +145,15 @@ exports.deleteFeedback = async (req, res) => {
             return res.status(404).json({ message: 'Feedback không tồn tại' });
         }
 
-        // Xóa trực tiếp mà không cần kiểm tra quyền
-        await Feedback.findByIdAndDelete(id);
+        // Kiểm tra quyền
+        if (req.user.role !== 'admin' && feedback.createdBy.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Bạn không có quyền xóa feedback này' });
+        }
+
+        await feedback.remove();
         res.status(200).json({ message: 'Feedback đã được xóa thành công' });
     } catch (error) {
-        console.error(error); // Log lỗi chi tiết
+        console.error(error);
         res.status(500).json({ message: 'Đã xảy ra lỗi trên server' });
     }
 };
-

@@ -5,7 +5,6 @@ const orderSchema = new mongoose.Schema(
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Người đặt hàng
         products: [
             {
-
                 name: { type: String, required: true }, // Tên sản phẩm
                 quantity: { type: Number, required: true }, // Số lượng mua
                 price: { type: Number, required: true }, // Giá tại thời điểm mua
@@ -15,7 +14,7 @@ const orderSchema = new mongoose.Schema(
         totalAmount: { type: Number, required: true }, // Tổng số tiền
         status: {
             type: String,
-            enum: ['ordered', 'delivered'], // Trạng thái đơn hàng
+            enum: ['ordered', 'shipping', 'delivered'], // Thêm trạng thái "shipping"
             default: 'ordered', // Mặc định là đã đặt hàng
         },
         createdAt: { type: Date, default: Date.now }, // Ngày tạo đơn hàng
