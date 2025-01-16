@@ -9,8 +9,12 @@ router.get('/admin', authenticate, orderController.getAllOrders);
 // Admin: Xem chi tiết một đơn hàng
 router.get('/admin/:id', authenticate, orderController.getOrderDetails);
 
+
 // Admin: Cập nhật trạng thái đơn hàng
-router.put('/admin/:id', authenticate, orderController.updateOrderStatus);
+router.put('/admin/:id', authenticate, orderController.updateOrderStatusByAdmin);
+
+// User: Cập nhật trạng thái đơn hàng
+router.put('/user/:id', authenticate, orderController.updateOrderStatusByUser);
 
 // Admin: Xóa đơn hàng
 router.delete('/admin/:id', authenticate, orderController.deleteOrder);

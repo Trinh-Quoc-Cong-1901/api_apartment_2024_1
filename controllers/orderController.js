@@ -38,30 +38,30 @@ exports.getOrderDetails = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
-// Admin: Cập nhật trạng thái đơn hàng
-// Admin: Cập nhật trạng thái đơn hàng
-exports.updateOrderStatus = async (req, res) => {
+exports.updateOrderStatusByAdmin = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
     try {
+        // Kiểm tra dữ liệu đầu vào
+        if (!id || !status) {
+            return res.status(400).json({ message: 'Thiếu id hoặc trạng thái đơn hàng' });
+        }
+
+        // Tìm đơn hàng
         const order = await Order.findById(id);
         if (!order) {
             return res.status(404).json({ message: 'Đơn hàng không tồn tại' });
         }
 
-        // Kiểm tra quyền và trạng thái hợp lệ
-        if (req.user.role === 'admin') {
-            if (order.status !== 'ordered' || status !== 'shipping') {
-                return res.status(400).json({ message: 'Admin chỉ có thể cập nhật từ ordered sang shipping' });
-            }
-        } else if (req.user.role === 'user') {
-            if (order.user.toString() !== req.user._id.toString() || order.status !== 'shipping' || status !== 'delivered') {
-                return res.status(400).json({ message: 'Người dùng chỉ có thể cập nhật từ shipping sang delivered cho đơn hàng của mình' });
-            }
-        } else {
-            return res.status(403).json({ message: 'Bạn không có quyền cập nhật đơn hàng' });
+        // Xác thực quyền admin và trạng thái hợp lệ
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Bạn không có quyền thực hiện hành động này' });
+        }
+        if (order.status !== 'ordered' || status !== 'shipping') {
+            return res.status(400).json({
+                message: 'Admin chỉ có thể cập nhật trạng thái từ "ordered" sang "shipping"',
+            });
         }
 
         // Cập nhật trạng thái đơn hàng
@@ -70,17 +70,68 @@ exports.updateOrderStatus = async (req, res) => {
 
         // Tạo thông báo cho người dùng
         const notification = new Notification({
-            user: order.user, // Người nhận thông báo là người đặt hàng
-            title: `Đơn hàng của bạn đã ${status === 'delivered' ? 'được giao' : 'đang giao'}`, // Tiêu đề thông báo
-            type: 'order', // Loại thông báo là order
-            relatedId: order._id, // ID liên kết là ID của đơn hàng
+            user: order.user,
+            title: `Đơn hàng của bạn hiện đang được vận chuyển.`,
+            type: 'order',
+            relatedId: order._id,
         });
-
         await notification.save();
 
-        res.status(200).json(updatedOrder);
+        return res.status(200).json({
+            message: 'Trạng thái đơn hàng đã được cập nhật bởi Admin',
+            order: updatedOrder,
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Lỗi khi admin cập nhật trạng thái đơn hàng:', error);
+        return res.status(500).json({ message: 'Đã xảy ra lỗi, vui lòng thử lại sau' });
+    }
+};
+exports.updateOrderStatusByUser = async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    try {
+        // Kiểm tra dữ liệu đầu vào
+        if (!id || !status) {
+            return res.status(400).json({ message: 'Thiếu id hoặc trạng thái đơn hàng' });
+        }
+
+        // Tìm đơn hàng
+        const order = await Order.findById(id);
+        if (!order) {
+            return res.status(404).json({ message: 'Đơn hàng không tồn tại' });
+        }
+
+        // Xác thực quyền user và trạng thái hợp lệ
+        if (req.user.role !== 'user') {
+            return res.status(403).json({ message: 'Bạn không có quyền thực hiện hành động này' });
+        }
+        if (order.status !== 'shipping' || status !== 'delivered') {
+            return res.status(400).json({
+                message: 'Bạn chỉ có thể cập nhật trạng thái từ "shipping" sang "delivered" cho đơn hàng của mình',
+            });
+        }
+
+        // Cập nhật trạng thái đơn hàng
+        order.status = status;
+        const updatedOrder = await order.save();
+
+        // Tạo thông báo cho người dùng
+        const notification = new Notification({
+            user: order.user,
+            title: `Đơn hàng của bạn đã được giao.`,
+            type: 'order',
+            relatedId: order._id,
+        });
+        await notification.save();
+
+        return res.status(200).json({
+            message: 'Trạng thái đơn hàng đã được cập nhật bởi User',
+            order: updatedOrder,
+        });
+    } catch (error) {
+        console.error('Lỗi khi user cập nhật trạng thái đơn hàng:', error);
+        return res.status(500).json({ message: 'Đã xảy ra lỗi, vui lòng thử lại sau' });
     }
 };
 
